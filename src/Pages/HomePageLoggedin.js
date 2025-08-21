@@ -6,6 +6,7 @@ import axios from "axios";
 const HomePageLoggedin = () => {
   const [user, setUser] = useState(null);
   const [inputUrl, setInputUrl] = useState(""); // State to hold input URL
+  const [dashboardRefresh, setDashboardRefresh] = useState(false); // New refresh state
 
   useEffect(() => {
     const authenticateUser = async () => {
@@ -13,11 +14,14 @@ const HomePageLoggedin = () => {
         const token = localStorage.getItem("jwtToken");
         if (!token) throw new Error("No token found");
 
-        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/authenticate`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await axios.get(
+          `${process.env.REACT_APP_BACKEND_URL}/authenticate`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         if (response.status === 200) {
           // Ensure Links structure is properly initialized
@@ -75,6 +79,8 @@ const HomePageLoggedin = () => {
       );
       alert("Link shortened successfully!");
       setInputUrl(""); // Clear the input field after successful shortening
+      // Trigger dashboard refresh
+      setDashboardRefresh((prev) => !prev);
     } catch (err) {
       console.error(err);
       alert("Failed to shorten link. Please try again.");
@@ -163,7 +169,8 @@ const HomePageLoggedin = () => {
             </div>
           </div>
         )}
-      <Dashboard_Loginned />
+      {/* Pass the refresh state as a prop */}
+      <Dashboard_Loginned refresh={dashboardRefresh} />
     </div>
   );
 };
