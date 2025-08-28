@@ -1,683 +1,760 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useTable } from "react-table";
-import { IoCopy, IoQrCodeOutline, IoEye } from "react-icons/io5";
-import {
-  IoMdCreate,
-  IoMdTrash,
-  IoMdCheckmark,
-  IoMdClose,
-} from "react-icons/io";
-import {
-  FaSpinner,
-  FaCheckCircle,
-  FaExclamationTriangle,
-  FaShieldAlt,
-  FaTag,
-} from "react-icons/fa";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import axios from "axios";
 
-// --- DetailsModal Component (for AI Analysis) ---
-const DetailsModal = ({ isOpen, link, onClose }) => {
-  if (!isOpen || !link) return null;
+// Import CSS
+import "./dashboard/Dashboard.css";
 
-  const getSafetyColor = (rating) => {
-    if (rating >= 4) return "#28a745";
-    if (rating >= 3) return "#ffc107";
-    return "#dc3545";
-  };
+// Import new dashboard components
+import DashboardHeader from "./dashboard/DashboardHeader";
+import CollectionsSidebar from "./dashboard/CollectionsSidebar";
+import LinkTable from "./dashboard/LinkTable";
+import FilterBar from "./dashboard/FilterBar";
+import CreateLinkModal from "./dashboard/modals/CreateLinkModal";
 
-  const getConfidenceColor = (confidence) => {
-    if (confidence >= 0.75) return "#28a745";
-    if (confidence >= 0.5) return "#ffc107";
-    return "#dc3545";
-  };
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.7)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: "#181E29",
-          padding: "25px",
-          borderRadius: "8px",
-          width: "90%",
-          maxWidth: "600px",
-          boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
-          border: "1px solid #353C4A",
-        }}
-      >
-        <h3
-          style={{
-            color: "#fff",
-            marginTop: 0,
-            borderBottom: "1px solid #353C4A",
-            paddingBottom: "10px",
-          }}
-        >
-          AI Link Analysis
-        </h3>
-
-        {link.analysisStatus === "PENDING" && (
-          <div style={{ color: "#ccc", textAlign: "center", padding: "20px" }}>
-            <FaSpinner className="animate-spin" /> Analysis is in progress...
-          </div>
-        )}
-
-        {link.analysisStatus === "FAILED" && (
-          <div
-            style={{ color: "#dc3545", textAlign: "center", padding: "20px" }}
-          >
-            <FaExclamationTriangle /> Analysis could not be completed for this
-            link.
-          </div>
-        )}
-
-        {link.analysisStatus === "COMPLETED" && (
-          <div>
-            {/* Summary */}
-            <div style={{ marginBottom: "15px" }}>
-              <strong style={{ color: "#fff" }}>AI Summary:</strong>
-              <p
-                style={{
-                  color: "#ccc",
-                  margin: "5px 0 0 0",
-                  fontStyle: "italic",
-                }}
-              >
-                "{link.aiSummary}"
-              </p>
-            </div>
-
-            {/* Tags */}
-            <div style={{ marginBottom: "15px" }}>
-              <strong style={{ color: "#fff" }}>Content Tags:</strong>
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "8px",
-                  marginTop: "5px",
-                }}
-              >
-                {(link.aiTags || []).map((tag) => (
-                  <span
-                    key={tag}
-                    style={{
-                      backgroundColor: "#353C4A",
-                      color: "#fff",
-                      padding: "3px 8px",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                    }}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Safety Analysis */}
-            <div style={{ marginBottom: "20px" }}>
-              <strong style={{ color: "#fff" }}>Safety Analysis:</strong>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  marginTop: "5px",
-                }}
-              >
-                <FaShieldAlt
-                  style={{
-                    color: getSafetyColor(link.aiSafetyRating),
-                    fontSize: "24px",
-                  }}
-                />
-                <div>
-                  <div
-                    style={{
-                      color: getSafetyColor(link.aiSafetyRating),
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Safety Score: {link.aiSafetyRating}/5
-                  </div>
-                  <div style={{ color: "#ccc", fontSize: "12px" }}>
-                    {link.aiSafetyJustification}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Content Classification */}
-            <div style={{ marginBottom: "20px" }}>
-              <strong style={{ color: "#fff" }}>Content Classification:</strong>
-              <div
-                style={{
-                  marginTop: "5px",
-                  backgroundColor: "#353C4A",
-                  borderRadius: "6px",
-                  padding: "10px",
-                }}
-              >
-                <div style={{ color: "#fff", fontWeight: "bold" }}>
-                  Category: {link.aiClassification?.category || "Other"}
-                </div>
-                <div
-                  style={{
-                    color: getConfidenceColor(
-                      link.aiClassification?.confidence
-                    ),
-                    fontSize: "14px",
-                    marginTop: "4px",
-                  }}
-                >
-                  Confidence:{" "}
-                  {Math.round((link.aiClassification?.confidence || 0) * 100)}%
-                </div>
-                <div
-                  style={{ color: "#ccc", fontSize: "12px", marginTop: "6px" }}
-                >
-                  {link.aiClassification?.reason ||
-                    "Analysis has not been completed."}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Footer */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            marginTop: "20px",
-          }}
-        >
-          <button
-            onClick={onClose}
-            style={{
-              backgroundColor: "#144EE3",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              padding: "8px 15px",
-              cursor: "pointer",
-            }}
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- EditModal Component (Unchanged) ---
-const EditModal = ({ isOpen, longUrl, shortUrl, onSave, onCancel }) => {
-  const [editValue, setEditValue] = useState(longUrl);
-  useEffect(() => {
-    setEditValue(longUrl);
-  }, [longUrl]);
-  if (!isOpen) return null;
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.7)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: "#181E29",
-          padding: "20px",
-          borderRadius: "8px",
-          width: "90%",
-          maxWidth: "500px",
-          boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
-        }}
-      >
-        <h3 style={{ color: "#fff", marginTop: 0 }}>Edit Destination URL</h3>
-        <div style={{ marginBottom: "15px" }}>
-          <label
-            style={{ color: "#fff", display: "block", marginBottom: "5px" }}
-          >
-            Short URL (Read-only):
-          </label>
-          <input
-            value={shortUrl}
-            readOnly
-            style={{
-              width: "100%",
-              padding: "8px",
-              backgroundColor: "#222",
-              color: "#ccc",
-              border: "1px solid #444",
-              borderRadius: "4px",
-            }}
-          />
-        </div>
-        <div style={{ marginBottom: "20px" }}>
-          <label
-            style={{ color: "#fff", display: "block", marginBottom: "5px" }}
-          >
-            Long URL:
-          </label>
-          <input
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "8px",
-              backgroundColor: "#222",
-              color: "#fff",
-              border: "1px solid #444",
-              borderRadius: "4px",
-            }}
-          />
-        </div>
-        <div
-          style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}
-        >
-          <button
-            onClick={onCancel}
-            style={{
-              backgroundColor: "#333",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              padding: "8px 15px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <IoMdClose style={{ marginRight: "5px" }} /> Cancel
-          </button>
-          <button
-            onClick={() => onSave(editValue)}
-            style={{
-              backgroundColor: "#144EE3",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              padding: "8px 15px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <IoMdCheckmark style={{ marginRight: "5px" }} /> Save
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+// Import existing modal components
+import DetailsModal from "./dashboard/modals/DetailsModal";
+import EditModal from "./dashboard/modals/EditModal";
+import CreateCollectionModal from "./dashboard/modals/CreateCollectionModal";
+import AddToCollectionModal from "./dashboard/modals/AddToCollectionModal";
+import EditCollectionModal from "./dashboard/modals/EditCollectionModal";
+import DeleteCollectionModal from "./dashboard/modals/DeleteCollectionModal";
 
 const Dashboard_Loginned = ({ refresh }) => {
+  // State management
   const [links, setLinks] = useState([]);
   const [user, setUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [collections, setCollections] = useState([]);
+  const [selectedCollection, setSelectedCollection] = useState("all");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFilterBarOpen, setIsFilterBarOpen] = useState(false);
+  // const [activeFilters, setActiveFilters] = useState({});
+
+  // Modal states
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [currentLinkDetails, setCurrentLinkDetails] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentEditing, setCurrentEditing] = useState(null);
+  const [isCreateCollectionModalOpen, setIsCreateCollectionModalOpen] =
+    useState(false);
+  const [isAddLinkModalOpen, setIsAddLinkModalOpen] = useState(false);
+  const [currentLinkToAdd, setCurrentLinkToAdd] = useState(null);
+  const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] =
+    useState(false);
+  const [currentEditingCollection, setCurrentEditingCollection] =
+    useState(null);
+  const [isDeleteCollectionModalOpen, setIsDeleteCollectionModalOpen] =
+    useState(false);
+  const [currentDeletingCollection, setCurrentDeletingCollection] =
+    useState(null);
+  const [isCreateLinkModalOpen, setIsCreateLinkModalOpen] = useState(false);
 
-  const fetchData = async () => {
+  // Retry mechanism for rate limit errors
+  const retryWithBackoff = async (operation, maxRetries = 3) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error) {
+        if (error.response?.status === 429 && attempt < maxRetries) {
+          const delay = Math.pow(2, attempt) * 1000;
+          console.log(
+            `Rate limited, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`
+          );
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+        throw error;
+      }
+    }
+  };
+
+  // Fetch dashboard data using the new single endpoint
+  const fetchDashboardData = useCallback(async (userId = null) => {
     try {
       const token = localStorage.getItem("jwtToken");
       if (!token) {
         window.location.href = "/login";
         return;
       }
-      const authResponse = await axios.get(
-        `${process.env.REACT_APP_BACKEND_URL}/authenticate`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setUser(authResponse.data.user);
-      const linksResponse = await axios.get(
-        `${process.env.REACT_APP_BACKEND_URL}/loggedin/${authResponse.data.user._id}/urls`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setLinks(linksResponse.data.urls);
+
+      // Try to get user ID from token if not provided
+      let targetUserId = userId;
+      if (!targetUserId) {
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          targetUserId = payload.userId || payload.sub || payload.id;
+        } catch (error) {
+          console.error("Error decoding token:", error);
+        }
+      }
+
+      if (!targetUserId) {
+        console.error("No user ID available");
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("Fetching dashboard data for user:", targetUserId);
+      const response = await retryWithBackoff(async () => {
+        return await axios.get(
+          `${process.env.REACT_APP_BACKEND_URL}/loggedin/${targetUserId}/dashboard-data`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      });
+
+      if (response.data.success) {
+        const {
+          user: userData,
+          links: linksData,
+          collections: collectionsData,
+        } = response.data.data;
+        setUser(userData);
+        setLinks(linksData);
+        setCollections(collectionsData);
+        console.log("Dashboard data loaded successfully");
+        console.log("Data structure:", {
+          user: userData,
+          linksCount: linksData.length,
+          collectionsCount: collectionsData.length,
+          sampleLink: linksData[0],
+          sampleCollection: collectionsData[0],
+        });
+      }
     } catch (err) {
-      console.error("Error fetching data:", err);
+      console.error("Error fetching dashboard data:", err);
+
+      if (err.response?.status === 429) {
+        alert(
+          "Rate limit exceeded while fetching data. Please wait a moment and refresh the page."
+        );
+      } else {
+        const errorMessage =
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          "Failed to fetch dashboard data. Please refresh the page.";
+        alert(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
+  // Initial data fetch
   useEffect(() => {
-    setIsLoading(true);
-    fetchData();
-  }, [refresh]);
-
-  const handleDelete = async (linkToDelete) => {
-    if (!window.confirm("Are you sure you want to delete this link?")) return;
-    try {
-      const token = localStorage.getItem("jwtToken");
-      await axios.delete(
-        `${process.env.REACT_APP_BACKEND_URL}/loggedin/${user._id}/url/${linkToDelete._id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setLinks((prevLinks) =>
-        prevLinks.filter((link) => link._id !== linkToDelete._id)
-      );
-    } catch (err) {
-      console.error("Delete error:", err);
-      alert("Failed to delete link.");
+    if (refresh) {
+      setIsLoading(true);
+      fetchDashboardData();
     }
-  };
+  }, [refresh, fetchDashboardData]);
 
-  const handleEditStart = (linkToEdit) => {
+  // Fetch data on component mount
+  useEffect(() => {
+    const token = localStorage.getItem("jwtToken");
+    console.log(
+      "Component mount effect - token:",
+      !!token,
+      "isLoading:",
+      isLoading,
+      "user:",
+      !!user
+    );
+    if (token && !user) {
+      console.log("Fetching data on component mount");
+      fetchDashboardData();
+    }
+  }, [user, isLoading, fetchDashboardData]);
+
+  // Memoized functions to prevent unnecessary re-renders
+  const handleEditStart = useCallback((linkToEdit) => {
     setCurrentEditing(linkToEdit);
     setIsEditModalOpen(true);
-  };
+  }, []);
 
-  const handleEditSave = async (newLongUrl) => {
-    if (
-      !newLongUrl ||
-      (!newLongUrl.startsWith("http://") && !newLongUrl.startsWith("https://"))
-    ) {
-      return alert(
-        "Please enter a valid URL starting with http:// or https://"
-      );
+  const handleDelete = useCallback(
+    async (linkToDelete) => {
+      if (!window.confirm("Are you sure you want to delete this link?")) return;
+
+      try {
+        const token = localStorage.getItem("jwtToken");
+        await retryWithBackoff(async () => {
+          return await axios.delete(
+            `${process.env.REACT_APP_BACKEND_URL}/loggedin/${user._id}/url/${linkToDelete._id}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        });
+
+        setLinks((prevLinks) =>
+          prevLinks.filter((link) => link._id !== linkToDelete._id)
+        );
+      } catch (err) {
+        console.error("Delete error:", err);
+        alert("Failed to delete link.");
+      }
+    },
+    [user?._id]
+  );
+
+  const handleAddToCollection = useCallback((link) => {
+    setCurrentLinkToAdd(link);
+    setIsAddLinkModalOpen(true);
+  }, []);
+
+  const handleViewAnalysis = useCallback((link) => {
+    console.log("Opening DetailsModal for link:", link);
+    console.log("AI fields:", {
+      aiSummary: link.aiSummary,
+      aiTags: link.aiTags,
+      aiSafetyRating: link.aiSafetyRating,
+      aiClassification: link.aiClassification,
+    });
+    setCurrentLinkDetails(link);
+    setIsDetailsModalOpen(true);
+  }, []);
+
+  const handleEditSave = useCallback(
+    async (newLongUrl) => {
+      if (
+        !newLongUrl ||
+        (!newLongUrl.startsWith("http://") &&
+          !newLongUrl.startsWith("https://"))
+      ) {
+        return alert("Please enter a valid URL.");
+      }
+
+      try {
+        const token = localStorage.getItem("jwtToken");
+        const response = await retryWithBackoff(async () => {
+          return await axios.patch(
+            `${process.env.REACT_APP_BACKEND_URL}/loggedin/${user._id}/url/${currentEditing._id}`,
+            { newLongUrl },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        });
+
+        setLinks((prevLinks) =>
+          prevLinks.map((link) =>
+            link._id === currentEditing._id ? response.data.link : link
+          )
+        );
+        setIsEditModalOpen(false);
+        setCurrentEditing(null);
+      } catch (err) {
+        console.error("Edit error:", err);
+        alert("Failed to update link.");
+      }
+    },
+    [user?._id, currentEditing?._id]
+  );
+
+  const handleCreateLink = useCallback(
+    async (linkData) => {
+      if (!linkData.longUrl) return;
+
+      setIsSubmitting(true);
+      try {
+        const token = localStorage.getItem("jwtToken");
+        const response = await retryWithBackoff(async () => {
+          return await axios.post(
+            `${process.env.REACT_APP_BACKEND_URL}/loggedin/${user._id}/url`,
+            linkData,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        });
+
+        if (response.data.message === "Link added successfully") {
+          // Refresh dashboard data to get the new link
+          await fetchDashboardData(user._id);
+          setIsCreateLinkModalOpen(false);
+        }
+      } catch (err) {
+        console.error("Create link error:", err);
+        if (err.response?.status === 429) {
+          alert("Too many requests. Please wait a moment before trying again.");
+        } else {
+          const errorMessage =
+            err.response?.data?.message || "Failed to create link.";
+          alert(errorMessage);
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [user?._id, fetchDashboardData]
+  );
+
+  const handleCreateCollection = useCallback(
+    async (name) => {
+      if (!name || name.trim() === "") {
+        alert("Please enter a collection name.");
+        return;
+      }
+
+      if (isSubmitting) {
+        alert("Please wait, request in progress...");
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        const token = localStorage.getItem("jwtToken");
+        const response = await retryWithBackoff(async () => {
+          return await axios.post(
+            `${process.env.REACT_APP_BACKEND_URL}/loggedin/${user._id}/collections`,
+            { name: name.trim() },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        });
+
+        if (response.data.success) {
+          setCollections((prev) =>
+            [...prev, response.data.collection].sort((a, b) =>
+              a.name.localeCompare(b.name)
+            )
+          );
+          setIsCreateCollectionModalOpen(false);
+        }
+      } catch (err) {
+        console.error("Create collection error:", err);
+        if (err.response?.status === 429) {
+          alert("Too many requests. Please wait a moment before trying again.");
+        } else {
+          const errorMessage =
+            err.response?.data?.message || "Failed to create collection.";
+          alert(errorMessage);
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [user?._id, isSubmitting]
+  );
+
+  const handleEditCollection = useCallback(
+    async (newName) => {
+      if (!newName || newName.trim() === "") {
+        alert("Please enter a collection name.");
+        return;
+      }
+
+      if (isSubmitting) {
+        alert("Please wait, request in progress...");
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        const token = localStorage.getItem("jwtToken");
+        const response = await retryWithBackoff(async () => {
+          return await axios.patch(
+            `${process.env.REACT_APP_BACKEND_URL}/loggedin/${user._id}/collections/${currentEditingCollection._id}`,
+            { name: newName.trim() },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        });
+
+        if (response.data.success) {
+          setCollections((prev) =>
+            prev
+              .map((col) =>
+                col._id === currentEditingCollection._id
+                  ? response.data.collection
+                  : col
+              )
+              .sort((a, b) => a.name.localeCompare(b.name))
+          );
+          setIsEditCollectionModalOpen(false);
+          setCurrentEditingCollection(null);
+        }
+      } catch (err) {
+        console.error("Edit collection error:", err);
+        if (err.response?.status === 429) {
+          alert("Too many requests. Please wait a moment before trying again.");
+        } else {
+          const errorMessage =
+            err.response?.data?.message || "Failed to edit collection.";
+          alert(errorMessage);
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [user?._id, currentEditingCollection?._id, isSubmitting]
+  );
+
+  const handleDeleteCollection = useCallback(async () => {
+    if (!currentDeletingCollection) return;
+
+    if (isSubmitting) {
+      alert("Please wait, request in progress...");
+      return;
     }
+
+    setIsSubmitting(true);
     try {
       const token = localStorage.getItem("jwtToken");
-      const response = await axios.patch(
-        `${process.env.REACT_APP_BACKEND_URL}/loggedin/${user._id}/url/${currentEditing._id}`,
-        { newLongUrl },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setLinks((prevLinks) =>
-        prevLinks.map((link) =>
-          link._id === currentEditing._id ? response.data.link : link
-        )
-      );
-      setIsEditModalOpen(false);
-      setCurrentEditing(null);
-    } catch (err) {
-      console.error("Edit error:", err);
-      alert("Failed to update link.");
-    }
-  };
+      const response = await retryWithBackoff(async () => {
+        return await axios.delete(
+          `${process.env.REACT_APP_BACKEND_URL}/loggedin/${user._id}/collections/${currentDeletingCollection._id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      });
 
-  const filteredData = useMemo(
-    () =>
-      links.filter(
+      if (response.data.success) {
+        setCollections((prev) =>
+          prev.filter((col) => col._id !== currentDeletingCollection._id)
+        );
+
+        if (selectedCollection === currentDeletingCollection._id) {
+          setSelectedCollection("all");
+        }
+
+        setIsDeleteCollectionModalOpen(false);
+        setCurrentDeletingCollection(null);
+      }
+    } catch (err) {
+      console.error("Delete collection error:", err);
+      if (err.response?.status === 429) {
+        alert("Too many requests. Please wait a moment before trying again.");
+      } else {
+        const errorMessage =
+          err.response?.data?.message || "Failed to delete collection.";
+        alert(errorMessage);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [user?._id, currentDeletingCollection, selectedCollection, isSubmitting]);
+
+  const handleAddLinkToCollections = useCallback(
+    async (collectionIds) => {
+      if (isSubmitting) {
+        alert("Please wait, request in progress...");
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        const token = localStorage.getItem("jwtToken");
+        const response = await retryWithBackoff(async () => {
+          return await axios.patch(
+            `${process.env.REACT_APP_BACKEND_URL}/loggedin/${user._id}/link/${currentLinkToAdd._id}/collections`,
+            { collectionIds },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        });
+
+        if (response.data.success) {
+          setLinks((prev) =>
+            prev.map((link) =>
+              link._id === currentLinkToAdd._id
+                ? { ...link, collections: collectionIds }
+                : link
+            )
+          );
+
+          setCollections((prev) =>
+            prev.map((col) => {
+              if (collectionIds.includes(col._id)) {
+                if (!col.links.includes(currentLinkToAdd._id)) {
+                  return {
+                    ...col,
+                    links: [...col.links, currentLinkToAdd._id],
+                  };
+                }
+              } else {
+                if (col.links.includes(currentLinkToAdd._id)) {
+                  return {
+                    ...col,
+                    links: col.links.filter(
+                      (id) => id !== currentLinkToAdd._id
+                    ),
+                  };
+                }
+              }
+              return col;
+            })
+          );
+
+          setIsAddLinkModalOpen(false);
+          setCurrentLinkToAdd(null);
+        }
+      } catch (err) {
+        console.error("Add link to collection error:", err);
+        if (err.response?.status === 429) {
+          alert("Too many requests. Please wait a moment before trying again.");
+        } else {
+          const errorMessage =
+            err.response?.data?.message || "Failed to update collections.";
+          alert(errorMessage);
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [user?._id, currentLinkToAdd?._id, isSubmitting]
+  );
+
+  const handleClearEmptyCollections = useCallback(async () => {
+    const emptyCollections = collections.filter(
+      (col) => !col.links || col.links.length === 0
+    );
+
+    if (emptyCollections.length === 0) {
+      alert("No empty collections to remove.");
+      return;
+    }
+
+    if (
+      window.confirm(
+        `Remove ${emptyCollections.length} empty collection${
+          emptyCollections.length !== 1 ? "s" : ""
+        }?`
+      )
+    ) {
+      try {
+        const token = localStorage.getItem("jwtToken");
+
+        for (const collection of emptyCollections) {
+          await retryWithBackoff(async () => {
+            return await axios.delete(
+              `${process.env.REACT_APP_BACKEND_URL}/loggedin/${user._id}/collections/${collection._id}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+          });
+        }
+
+        // Refresh data after bulk operation
+        await fetchDashboardData(user._id);
+      } catch (err) {
+        console.error("Clear empty collections error:", err);
+        alert("Failed to clear empty collections.");
+      }
+    }
+  }, [collections, user?._id, fetchDashboardData]);
+
+  // Handle filter changes
+  const handleFiltersChange = useCallback(
+    async (filters) => {
+      // setActiveFilters(filters);
+
+      // Check if any filters are active
+      const hasActiveFilters = Object.values(filters).some((value) => {
+        if (Array.isArray(value)) return value.length > 0;
+        if (typeof value === "object") {
+          return Object.values(value).some(
+            (v) => v !== "" && v !== 0 && v !== 1
+          );
+        }
+        return value !== "" && value !== "createdAt_desc";
+      });
+
+      if (hasActiveFilters) {
+        try {
+          setIsLoading(true);
+          const token = localStorage.getItem("jwtToken");
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          const userId = payload.userId || payload.sub || payload.id;
+
+          const response = await axios.post(
+            `${process.env.REACT_APP_BACKEND_URL}/loggedin/${userId}/links/filter`,
+            filters,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          if (response.data.success) {
+            setLinks(response.data.data.links);
+            console.log("Filtered links:", response.data.data.links.length);
+          }
+        } catch (error) {
+          console.error("Error applying filters:", error);
+          // Fallback to showing all links
+          await fetchDashboardData(user?._id);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        // No active filters, fetch all data
+        await fetchDashboardData(user?._id);
+      }
+    },
+    [user?._id, fetchDashboardData]
+  );
+
+  // Handle bulk add to collection
+  const handleBulkAddToCollection = useCallback(
+    async (collectionId, linkIds) => {
+      if (!collectionId || !linkIds || linkIds.length === 0) return;
+
+      try {
+        setIsSubmitting(true);
+        const token = localStorage.getItem("jwtToken");
+
+        const response = await axios.post(
+          `${process.env.REACT_APP_BACKEND_URL}/loggedin/${user._id}/collections/${collectionId}/links/bulk-add`,
+          { linkIds },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (response.data.success) {
+          // Refresh dashboard data to show updated collection assignments
+          await fetchDashboardData(user._id);
+          console.log(`Added ${linkIds.length} links to collection`);
+        }
+      } catch (error) {
+        console.error("Error adding links to collection:", error);
+        alert("Failed to add links to collection. Please try again.");
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [user?._id, fetchDashboardData]
+  );
+
+  // Filter data based on selected collection and search query
+  const filteredData = useMemo(() => {
+    let filtered = links;
+
+    console.log("Filtering data:", {
+      selectedCollection,
+      totalLinks: links.length,
+      totalCollections: collections.length,
+      searchQuery,
+      sampleLink: links[0],
+      sampleCollection: collections[0],
+    });
+
+    if (selectedCollection === "uncategorized") {
+      // Filter links that don't belong to any collection
+      filtered = links.filter((link) => {
+        // Check if the link has no collections array or empty collections array
+        if (!link.collections || link.collections.length === 0) {
+          return true;
+        }
+        // Also check if all collections in the link's collections array are invalid/removed
+        const validCollections = link.collections.filter((collectionId) =>
+          collections.some((col) => col._id === collectionId)
+        );
+        return validCollections.length === 0;
+      });
+      console.log("Uncategorized links found:", filtered.length);
+    } else if (selectedCollection !== "all") {
+      const collection = collections.find((c) => c._id === selectedCollection);
+      if (collection && collection.links) {
+        const linkIdsInCollection = new Set(collection.links);
+        filtered = links.filter((link) => linkIdsInCollection.has(link._id));
+        console.log(
+          `Collection "${collection.name}" links found:`,
+          filtered.length
+        );
+      } else {
+        filtered = []; // No links in this collection
+        console.log("No collection found or collection has no links");
+      }
+    } else {
+      console.log("Showing all links:", filtered.length);
+    }
+
+    if (searchQuery) {
+      const lowercasedQuery = searchQuery.toLowerCase();
+      filtered = filtered.filter(
         (link) =>
-          link.longUrl.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          link.longUrl.toLowerCase().includes(lowercasedQuery) ||
           `${process.env.REACT_APP_FRONTEND_URL}/linkly/${link.shortId}`
             .toLowerCase()
-            .includes(searchQuery.toLowerCase())
-      ),
-    [links, searchQuery]
-  );
+            .includes(lowercasedQuery)
+      );
+      console.log("After search filter:", filtered.length);
+    }
 
-  const dashboardColumns = useMemo(
-    () => [
-      {
-        Header: "Short Link",
-        accessor: "shortId",
-        Cell: ({ row }) => {
-          const fullUrl = `${process.env.REACT_APP_FRONTEND_URL}/linkly/${row.original.shortId}`;
-          return (
-            <a href={fullUrl} target="_blank" rel="noopener noreferrer">
-              {fullUrl}
-            </a>
-          );
-        },
-      },
-      {
-        Header: "Long Link",
-        accessor: "longUrl",
-        Cell: ({ value }) => (
-          <div
-            style={{
-              maxWidth: "300px",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            <a
-              href={value}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={value}
-            >
-              {value}
-            </a>
-          </div>
-        ),
-      },
-      { Header: "Clicks", accessor: "viewerCount" },
-      {
-        Header: "QR Code",
-        id: "qrCode",
-        Cell: ({ row }) => {
-          const isPremium =
-            user &&
-            user.subscription === "Premium" &&
-            new Date(user.endDateOfSubscription) > new Date();
-          if (!isPremium) return "-";
-          const qrUrl = `${process.env.REACT_APP_FRONTEND_URL}/linkly/qr/${row.original.shortId}`;
-          return (
-            <a
-              href={qrUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <IoQrCodeOutline style={{ fontSize: "24px" }} />
-            </a>
-          );
-        },
-      },
-      {
-        Header: "AI Status",
-        accessor: "analysisStatus",
-        Cell: ({ value }) => (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            {value === "PENDING" && (
-              <FaSpinner
-                className="animate-spin"
-                title="Analysis in progress..."
-              />
-            )}
-            {value === "COMPLETED" && (
-              <FaCheckCircle
-                style={{ color: "green" }}
-                title="Analysis complete"
-              />
-            )}
-            {value === "FAILED" && (
-              <FaExclamationTriangle
-                style={{ color: "red" }}
-                title="Analysis failed"
-              />
-            )}
-          </div>
-        ),
-      },
-      {
-        Header: "Actions",
-        id: "actions",
-        Cell: ({ row }) => (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "15px",
-              fontSize: "20px",
-            }}
-          >
-            <button
-              title="View AI Analysis"
-              onClick={() => {
-                setCurrentLinkDetails(row.original);
-                setIsDetailsModalOpen(true);
-              }}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#144EE3",
-                cursor: "pointer",
-              }}
-            >
-              <IoEye />
-            </button>
-            <button
-              title="Edit"
-              onClick={() => handleEditStart(row.original)}
-              style={{
-                background: "none",
-                border: "none",
-                color: "orange",
-                cursor: "pointer",
-              }}
-            >
-              <IoMdCreate />
-            </button>
-            <button
-              title="Delete"
-              onClick={() => handleDelete(row.original)}
-              style={{
-                background: "none",
-                border: "none",
-                color: "red",
-                cursor: "pointer",
-              }}
-            >
-              <IoMdTrash />
-            </button>
-          </div>
-        ),
-      },
-    ],
-    [user] // user is a dependency for the QR code logic
-  );
+    return filtered;
+  }, [links, searchQuery, selectedCollection, collections]);
 
-  const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
-    useTable({ columns: dashboardColumns, data: filteredData });
+  // Collection statistics
+  const collectionStats = useMemo(() => {
+    const totalLinks = links.length;
+    const totalCollections = collections.length;
+    const averageLinksPerCollection =
+      totalCollections > 0 ? (totalLinks / totalCollections).toFixed(2) : 0;
+
+    return {
+      totalLinks,
+      totalCollections,
+      averageLinksPerCollection: parseFloat(averageLinksPerCollection),
+    };
+  }, [links, collections]);
 
   if (isLoading) {
     return (
-      <div style={{ color: "white", textAlign: "center", paddingTop: "50px" }}>
-        Loading Dashboard...
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading Dashboard...</p>
       </div>
     );
   }
 
   return (
-    <div style={{ width: "95%", margin: "auto" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          marginBottom: "20px",
+    <div className="dashboard-container">
+      {/* Collections Sidebar */}
+      <CollectionsSidebar
+        collections={collections}
+        selectedCollection={selectedCollection}
+        onCollectionSelect={(collectionId) => {
+          console.log("Collection selected:", collectionId);
+          console.log("Previous selection:", selectedCollection);
+          setSelectedCollection(collectionId);
+          console.log("New selection set to:", collectionId);
         }}
-      >
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search links..."
-          style={{
-            padding: "8px",
-            borderRadius: "5px",
-            border: "1px solid #353C4A",
-            backgroundColor: "#181E29",
-            color: "white",
-            minWidth: "300px",
-          }}
+        onCreateCollection={() => setIsCreateCollectionModalOpen(true)}
+        onEditCollection={(collection) => {
+          setCurrentEditingCollection(collection);
+          setIsEditCollectionModalOpen(true);
+        }}
+        onDeleteCollection={(collection) => {
+          setCurrentDeletingCollection(collection);
+          setIsDeleteCollectionModalOpen(true);
+        }}
+        onClearEmptyCollections={handleClearEmptyCollections}
+        totalLinks={links.length}
+        collectionStats={collectionStats}
+      />
+
+      {/* Main Content */}
+      <div className="dashboard-main">
+        <DashboardHeader
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onCreateLink={() => setIsCreateLinkModalOpen(true)}
+          totalLinks={filteredData.length}
+          selectedCollection={selectedCollection}
+        />
+
+        <FilterBar
+          onFiltersChange={handleFiltersChange}
+          isOpen={isFilterBarOpen}
+          onToggle={() => setIsFilterBarOpen(!isFilterBarOpen)}
+        />
+
+        <LinkTable
+          links={filteredData}
+          user={user}
+          onEditStart={handleEditStart}
+          onDelete={handleDelete}
+          onAddToCollection={handleAddToCollection}
+          onViewAnalysis={handleViewAnalysis}
+          selectedCollection={selectedCollection}
+          onBulkAddToCollection={handleBulkAddToCollection}
+          collections={collections}
         />
       </div>
 
-      <table
-        {...getTableProps()}
-        className="table"
-        style={{ width: "100%", borderCollapse: "collapse" }}
-      >
-        <thead style={{ backgroundColor: "#181E29" }}>
-          {headerGroups.map((headerGroup) => (
-            <tr {...headerGroup.getHeaderGroupProps()}>
-              {headerGroup.headers.map((column) => (
-                <th
-                  {...column.getHeaderProps()}
-                  style={{
-                    padding: "12px",
-                    borderBottom: "1-px solid #353C4A",
-                  }}
-                >
-                  {column.render("Header")}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody {...getTableBodyProps()}>
-          {rows.map((row) => {
-            prepareRow(row);
-            return (
-              <tr
-                {...row.getRowProps()}
-                style={{ borderBottom: "1px solid #353C4A" }}
-              >
-                {row.cells.map((cell) => (
-                  <td
-                    {...cell.getCellProps()}
-                    style={{ padding: "12px", textAlign: "center" }}
-                  >
-                    {cell.render("Cell")}
-                  </td>
-                ))}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
+      {/* Modals */}
       <DetailsModal
         isOpen={isDetailsModalOpen}
         link={currentLinkDetails}
         onClose={() => setIsDetailsModalOpen(false)}
       />
+
       <EditModal
         isOpen={isEditModalOpen}
         longUrl={currentEditing?.longUrl}
@@ -691,6 +768,51 @@ const Dashboard_Loginned = ({ refresh }) => {
           setIsEditModalOpen(false);
           setCurrentEditing(null);
         }}
+      />
+
+      <CreateLinkModal
+        isOpen={isCreateLinkModalOpen}
+        onClose={() => setIsCreateLinkModalOpen(false)}
+        onSave={handleCreateLink}
+        isSubmitting={isSubmitting}
+      />
+
+      <CreateCollectionModal
+        isOpen={isCreateCollectionModalOpen}
+        onClose={() => setIsCreateCollectionModalOpen(false)}
+        onSave={handleCreateCollection}
+        isSubmitting={isSubmitting}
+      />
+
+      <AddToCollectionModal
+        isOpen={isAddLinkModalOpen}
+        onClose={() => {
+          setIsAddLinkModalOpen(false);
+          setCurrentLinkToAdd(null);
+        }}
+        collections={collections}
+        onSave={handleAddLinkToCollections}
+        link={currentLinkToAdd}
+      />
+
+      <EditCollectionModal
+        isOpen={isEditCollectionModalOpen}
+        collection={currentEditingCollection}
+        onClose={() => {
+          setIsEditCollectionModalOpen(false);
+          setCurrentEditingCollection(null);
+        }}
+        onSave={handleEditCollection}
+      />
+
+      <DeleteCollectionModal
+        isOpen={isDeleteCollectionModalOpen}
+        collection={currentDeletingCollection}
+        onClose={() => {
+          setIsDeleteCollectionModalOpen(false);
+          setCurrentDeletingCollection(null);
+        }}
+        onConfirm={handleDeleteCollection}
       />
     </div>
   );

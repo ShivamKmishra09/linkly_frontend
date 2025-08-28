@@ -1,15 +1,15 @@
 import React from "react";
 import axios from "axios";
-import {
-  MDBContainer,
-  MDBRow,
-  MDBCol,
-  MDBBtn,
-  MDBCard,
-  MDBCardBody,
-  MDBCardTitle,
-  MDBCardText,
-} from "mdb-react-ui-kit";
+// import {
+//   MDBContainer,
+//   MDBRow,
+//   MDBCol,
+//   MDBBtn,
+//   MDBCard,
+//   MDBCardBody,
+//   MDBCardTitle,
+//   MDBCardText,
+// } from "mdb-react-ui-kit";
 import { useState, useEffect } from "react";
 
 function Subscription() {

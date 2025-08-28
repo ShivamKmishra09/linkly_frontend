@@ -32,7 +32,7 @@ const QrDisplayer = () => {
     link.click();
   };
 
-  const displayUrl = `${process.env.REACT_APP_FRONTEND_URL || window.location.origin}/linkly/${web_id}`;
+  // const displayUrl = `${process.env.REACT_APP_FRONTEND_URL || window.location.origin}/linkly/${web_id}`;
 
   return (
     <div className="home-container">

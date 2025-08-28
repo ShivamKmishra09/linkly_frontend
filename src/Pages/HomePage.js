@@ -41,10 +41,11 @@ const HomePage = () => {
     try {
       let random_string;
       let shortUrl;
+      const existingShortUrls = listUrls.map(item => item.shortUrl);
       do {
         random_string = Math.random().toString(36).substring(2, 7);
         shortUrl = `${process.env.REACT_APP_FRONTEND_URL}/linkly/${random_string}`;
-      } while (listUrls.some((item) => item.shortUrl === shortUrl));
+      } while (existingShortUrls.includes(shortUrl));
 
       const newUrl = { longUrl: url, shortUrl: shortUrl };
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import Dashboard_Loginned from "../components/Dashboard_Loginned";
+import DashboardLoginned from "../components/Dashboard_Loginned";
 import axios from "axios";
 
 const HomePageLoggedin = () => {
@@ -68,7 +68,7 @@ const HomePageLoggedin = () => {
       const token = localStorage.getItem("jwtToken");
       if (!token) throw new Error("No token found");
 
-      const response = await axios.patch(
+      await axios.patch(
         `${process.env.REACT_APP_BACKEND_URL}/loggedin/${user._id}/redirect`,
         { oldLink: inputUrl }, // Send input URL in the request body
         {
@@ -150,7 +150,7 @@ const HomePageLoggedin = () => {
             </p>
           )}
       </div>
-      {user &&
+      {/* {user &&
         (user.subscription === "Free" ||
           user.subscription === null ||
           new Date(user.endDateOfSubscription) < new Date()) && (
@@ -168,9 +168,9 @@ const HomePageLoggedin = () => {
               </button>
             </div>
           </div>
-        )}
+        )} */}
       {/* Pass the refresh state as a prop */}
-      <Dashboard_Loginned refresh={dashboardRefresh} />
+      <DashboardLoginned refresh={dashboardRefresh} />
     </div>
   );
 };
