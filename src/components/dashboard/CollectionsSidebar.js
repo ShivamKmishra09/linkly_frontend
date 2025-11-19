@@ -29,7 +29,7 @@ const CollectionsSidebar = ({
   const filteredCollections = collections.filter((collection) =>
     collection.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
+  console.log("Filtered Collections:", filteredCollections);
   const systemCollections = filteredCollections.filter((c) => c.isSystem);
   const userCollections = filteredCollections.filter((c) => !c.isSystem);
 
@@ -94,11 +94,11 @@ const CollectionsSidebar = ({
 
   return (
     <div className="collections-sidebar">
+      {/*
       <div className="sidebar-header">
         <h3 className="sidebar-title">Collections</h3>
       </div>
 
-      {/* Collection Statistics */}
       <div className="collection-stats">
         <div className="stats-header">
           <IoStatsChart />
@@ -121,6 +121,7 @@ const CollectionsSidebar = ({
           </span>
         </div>
       </div>
+      */}
 
       {/* Collection Search */}
       <div className="collection-search">
@@ -182,17 +183,11 @@ const CollectionsSidebar = ({
 
       {/* Collection Management */}
       <div className="collection-management">
-        <button
-          onClick={onCreateCollection}
-          className="create-collection-btn"
-        >
+        <button onClick={onCreateCollection} className="create-collection-btn">
           <IoAdd />
           Create Collection
         </button>
-        <button
-          onClick={onClearEmptyCollections}
-          className="clear-empty-btn"
-        >
+        <button onClick={onClearEmptyCollections} className="clear-empty-btn">
           Clear Empty Collections
         </button>
       </div>

@@ -113,13 +113,13 @@ const Dashboard_Loginned = ({ refresh }) => {
         setLinks(linksData);
         setCollections(collectionsData);
         console.log("Dashboard data loaded successfully");
-        console.log("Data structure:", {
-          user: userData,
-          linksCount: linksData.length,
-          collectionsCount: collectionsData.length,
-          sampleLink: linksData[0],
-          sampleCollection: collectionsData[0],
-        });
+        // console.log("Data structure:", {
+        //   user: userData,
+        //   linksCount: linksData.length,
+        //   collectionsCount: collectionsData.length,
+        //   sampleLink: linksData[0],
+        //   sampleCollection: collectionsData[0],
+        // });
       }
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
