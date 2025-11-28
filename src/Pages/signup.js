@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Container, Form, Button } from "react-bootstrap";
 import axios from "axios";
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { jwtDecode } from 'jwt-decode';
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const SignUp = () => {
@@ -19,11 +19,13 @@ const SignUp = () => {
     e.preventDefault();
 
     try {
-      const resp = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/register`, {
-        username,
-        email,
-        password,
-      },
+      const resp = await axios.post(
+        `${process.env.REACT_APP_BACKEND_URL}/register`,
+        {
+          username,
+          email,
+          password,
+        },
         { withCredentials: true }
       );
 
@@ -43,18 +45,22 @@ const SignUp = () => {
       const { email, name } = decoded;
 
       try {
-        const resp = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/google-auth`, {
-          email,
-          username: name,
-        }, {
-          withCredentials: true,
-        });
+        const resp = await axios.post(
+          `${process.env.REACT_APP_BACKEND_URL}/google-auth`,
+          {
+            email,
+            username: name,
+          },
+          {
+            withCredentials: true,
+          }
+        );
 
         if (resp.status === 200) {
           const token = resp.data.token;
-          localStorage.setItem('jwtToken', token);
+          localStorage.setItem("jwtToken", token);
           alert("You have been Logged in!!");
-          window.location.href = "/loggedin/" + resp.data.user._id;
+          window.location.href = "/home";
         }
       } catch (loginErr) {
         alert("Error signing in with Google", loginErr);
@@ -64,7 +70,7 @@ const SignUp = () => {
       console.error("JWT decode error:", decodeErr);
     }
   };
-  
+
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   return (
@@ -79,7 +85,9 @@ const SignUp = () => {
               if (err.error === "popup_closed_by_user") {
                 alert("Popup closed by user before completing login.");
               } else if (err.error === "idpiframe_initialization_failed") {
-                alert("Initialization failed. Please check your Client ID and authorized origins.");
+                alert(
+                  "Initialization failed. Please check your Client ID and authorized origins."
+                );
               } else {
                 console.error("Google login error:", err);
               }
@@ -106,7 +114,10 @@ const SignUp = () => {
               onChange={(e) => setEmail(e.target.value)}
             />
           </Form.Group>
-          <Form.Group controlId="formBasicPassword" style={{ position: "relative" }}>
+          <Form.Group
+            controlId="formBasicPassword"
+            style={{ position: "relative" }}
+          >
             <Form.Control
               className="password"
               type={showPassword ? "text" : "password"}
@@ -114,15 +125,15 @@ const SignUp = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <div 
-              onClick={togglePasswordVisibility} 
-              style={{ 
-                position: "absolute", 
-                right: "10px", 
-                top: "50%", 
+            <div
+              onClick={togglePasswordVisibility}
+              style={{
+                position: "absolute",
+                right: "10px",
+                top: "50%",
                 transform: "translateY(-50%)",
                 cursor: "pointer",
-                color: "#999"
+                color: "#999",
               }}
             >
               {showPassword ? <FaEyeSlash /> : <FaEye />}

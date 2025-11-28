@@ -27,11 +27,8 @@ function App() {
         <Navbars />
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route
-            path="/loggedin/:user_id/subscription"
-            element={<Subscription />}
-          />
-          <Route path="/loggedin/:user_id" element={<HomePageLoggedin />} />
+          <Route path="/loggedin/subscription" element={<Subscription />} />
+          <Route path="/home" element={<HomePageLoggedin />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/linkly/:shortUrl" element={<RedirectUrl />} />
