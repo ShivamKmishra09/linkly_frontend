@@ -30,10 +30,10 @@ const LinkTable = ({
     if (checked) {
       const allIds = links.map((link) => link._id);
       setSelectedRows(new Set(allIds));
-      console.log("Select all checked:", allIds);
+      // console.log("Select all checked:", allIds);
     } else {
       setSelectedRows(new Set());
-      console.log("Select all unchecked");
+      // console.log("Select all unchecked");
     }
   };
 
@@ -51,13 +51,13 @@ const LinkTable = ({
               const newSelected = new Set(selectedRows);
               if (e.target.checked) {
                 newSelected.add(row.original._id);
-                console.log("Row selected:", row.original._id);
+                // console.log("Row selected:", row.original._id);
               } else {
                 newSelected.delete(row.original._id);
-                console.log("Row deselected:", row.original._id);
+                // console.log("Row deselected:", row.original._id);
               }
               setSelectedRows(newSelected);
-              console.log("Updated selected rows:", Array.from(newSelected));
+              // console.log("Updated selected rows:", Array.from(newSelected));
             }}
           />
         ),

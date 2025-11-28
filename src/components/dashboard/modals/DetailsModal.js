@@ -1,6 +1,5 @@
 import React from "react";
-import { IoClose, IoStatsChart } from "react-icons/io5";
-
+import { IoClose, IoInformationCircle, IoAnalytics, IoAlbums } from "react-icons/io5";
 const DetailsModal = ({ isOpen, link, onClose }) => {
   if (!isOpen || !link) return null;
 
@@ -49,6 +48,44 @@ const DetailsModal = ({ isOpen, link, onClose }) => {
     );
   };
 
+  const renderClassification = (classification) => {
+    if (!classification) return null;
+
+    let data = classification;
+    if (typeof classification === "string") {
+      try {
+        data = JSON.parse(classification);
+      } catch (e) {
+        console.error("Failed to parse classification:", e);
+        return renderAIField(classification, "Classification");
+      }
+    }
+
+    if (typeof data !== "object") {
+      return renderAIField(data, "Classification");
+    }
+
+    return (
+      <div className="detail-row">
+        <span className="detail-label">Classification:</span>
+        <div className="detail-value classification-container">
+          <span className="category-text">{data.category}</span>
+          <div className="tooltip-container">
+            <span className="view-more">View More</span>
+            <div className="tooltip-text">
+              <div className="tooltip-row">
+                <strong>Confidence:</strong> {data.confidence}
+              </div>
+              <div className="tooltip-row">
+                <strong>Reason:</strong> {data.reason}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="modal-overlay">
       <div className="modal-content details-modal">
@@ -62,11 +99,19 @@ const DetailsModal = ({ isOpen, link, onClose }) => {
         <div className="modal-body">
           {/* Basic Information */}
           <div className="detail-section">
-            <h3>Basic Information</h3>
+            <h3><IoInformationCircle /> Basic Information</h3>
             <div className="detail-row">
               <span className="detail-label">Short URL:</span>
               <span className="detail-value short-url">
-                {process.env.REACT_APP_FRONTEND_URL}/linkly/{link.shortId}
+
+                <a 
+                  href={`/linkly/${process.env.REACT_APP_FRONTEND_URL}/linkly/{link.shortId}`} 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="detail-value long-url"
+                >
+                  {process.env.REACT_APP_FRONTEND_URL}/linkly/{link.shortId}
+                </a>
               </span>
             </div>
             <div className="detail-row">
@@ -87,14 +132,14 @@ const DetailsModal = ({ isOpen, link, onClose }) => {
             <div className="detail-row">
               <span className="detail-label">Clicks:</span>
               <span className="detail-value">
-                <IoStatsChart /> {link.viewerCount || 0}
+                 {link.viewerCount || 0}
               </span>
             </div>
           </div>
 
           {/* AI Analysis */}
           <div className="detail-section">
-            <h3>AI Analysis</h3>
+            <h3><IoAnalytics /> AI Analysis</h3>
             <div className="detail-row">
               <span className="detail-label">Status:</span>
               <span
@@ -107,7 +152,7 @@ const DetailsModal = ({ isOpen, link, onClose }) => {
             </div>
 
             {renderAIField(link.aiSummary, "Summary")}
-            {renderAIField(link.aiClassification, "Classification")}
+            {renderClassification(link.aiClassification)}
             {renderAIField(link.aiSafetyRating, "Safety Rating")}
 
             {link.aiTags && link.aiTags.length > 0 && (
@@ -129,7 +174,7 @@ const DetailsModal = ({ isOpen, link, onClose }) => {
           {/* Collections */}
           {link.collections && link.collections.length > 0 && (
             <div className="detail-section">
-              <h3>Collections</h3>
+              <h3><IoAlbums /> Collections</h3>
               <div className="detail-row">
                 <span className="detail-label">Assigned to:</span>
                 <div className="detail-value">

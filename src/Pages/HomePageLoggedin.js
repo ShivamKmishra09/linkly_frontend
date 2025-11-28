@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+// import { Link } from "react-router-dom";
 import DashboardLoginned from "../components/Dashboard_Loginned";
 import axios from "axios";
 
@@ -87,28 +87,27 @@ const HomePageLoggedin = () => {
     }
   };
 
-  const getRemainingLinks = () => {
-    if (!user || !user.Links || !user.Links.oldLink) {
-      return 100;
-    }
-    return 100 - user.Links.oldLink.length;
-  };
+  // const getRemainingLinks = () => {
+  //   if (!user || !user.Links || !user.Links.oldLink) {
+  //     return 100;
+  //   }
+  //   return 100 - user.Links.oldLink.length;
+  // };
 
   return (
-    <div className="home-container">
+    <div className="home-container-login">
       <div className="home-item-box">
         {user ? (
           <>
             <h2>Welcome, {user.username}!</h2>
-            <h1>Shorten Your Loooong Links :)</h1>
           </>
         ) : (
           <h1>Loading...</h1>
         )}
-        <p style={{ marginTop: "25px" }}>
+        {/* <p style={{ marginTop: "25px" }}>
           Linkly is an efficient and easy-to-use URL shortening service that
           streamlines your online experience.
-        </p>
+        </p> */}
         <div className="wrapper">
           <input
             type="text"
@@ -124,7 +123,7 @@ const HomePageLoggedin = () => {
             Shorten Now!
           </button>
         </div>
-        {user &&
+        {/* {user &&
           (user.subscription === "Free" ||
             user.subscription === null ||
             new Date(user.endDateOfSubscription) < new Date()) && (
@@ -148,7 +147,7 @@ const HomePageLoggedin = () => {
               </Link>{" "}
               to enjoy Unlimited Usage !!!
             </p>
-          )}
+          )} */}
       </div>
       {/* {user &&
         (user.subscription === "Free" ||

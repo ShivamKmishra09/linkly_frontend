@@ -95,7 +95,7 @@ const Dashboard_Loginned = ({ refresh }) => {
         return;
       }
 
-      console.log("Fetching dashboard data for user:", targetUserId);
+      // console.log("Fetching dashboard data for user:", targetUserId);
       const response = await retryWithBackoff(async () => {
         return await axios.get(
           `${process.env.REACT_APP_BACKEND_URL}/loggedin/${targetUserId}/dashboard-data`,
@@ -112,7 +112,7 @@ const Dashboard_Loginned = ({ refresh }) => {
         setUser(userData);
         setLinks(linksData);
         setCollections(collectionsData);
-        console.log("Dashboard data loaded successfully");
+        // console.log("Dashboard data loaded successfully");
         // console.log("Data structure:", {
         //   user: userData,
         //   linksCount: linksData.length,
@@ -151,19 +151,19 @@ const Dashboard_Loginned = ({ refresh }) => {
   // Fetch data on component mount
   useEffect(() => {
     const token = localStorage.getItem("jwtToken");
-    console.log(
-      "Component mount effect - token:",
-      !!token,
-      "isLoading:",
-      isLoading,
-      "user:",
-      !!user
-    );
+    // console.log(
+    //   "Component mount effect - token:",
+    //   !!token,
+    //   "isLoading:",
+    //   isLoading,
+    //   "user:",
+    //   !!user
+    // );
     if (token && !user) {
-      console.log("Fetching data on component mount");
+      // console.log("Fetching data on component mount");
       fetchDashboardData();
     }
-  }, [user, isLoading, fetchDashboardData]);
+  }, [user, fetchDashboardData]);
 
   // Memoized functions to prevent unnecessary re-renders
   const handleEditStart = useCallback((linkToEdit) => {
@@ -201,13 +201,13 @@ const Dashboard_Loginned = ({ refresh }) => {
   }, []);
 
   const handleViewAnalysis = useCallback((link) => {
-    console.log("Opening DetailsModal for link:", link);
-    console.log("AI fields:", {
-      aiSummary: link.aiSummary,
-      aiTags: link.aiTags,
-      aiSafetyRating: link.aiSafetyRating,
-      aiClassification: link.aiClassification,
-    });
+    // console.log("Opening DetailsModal for link:", link);
+    // console.log("AI fields:", {
+    //   aiSummary: link.aiSummary,
+    //   aiTags: link.aiTags,
+    //   aiSafetyRating: link.aiSafetyRating,
+    //   aiClassification: link.aiClassification,
+    // });
     setCurrentLinkDetails(link);
     setIsDetailsModalOpen(true);
   }, []);
@@ -263,6 +263,9 @@ const Dashboard_Loginned = ({ refresh }) => {
         });
 
         if (response.data.message === "Link added successfully") {
+          // Wait for 30 seconds before refreshing
+          await new Promise((resolve) => setTimeout(resolve, 30000));
+          
           // Refresh dashboard data to get the new link
           await fetchDashboardData(user._id);
           setIsCreateLinkModalOpen(false);
@@ -564,7 +567,7 @@ const Dashboard_Loginned = ({ refresh }) => {
 
           if (response.data.success) {
             setLinks(response.data.data.links);
-            console.log("Filtered links:", response.data.data.links.length);
+            // console.log("Filtered links:", response.data.data.links.length);
           }
         } catch (error) {
           console.error("Error applying filters:", error);
@@ -599,7 +602,7 @@ const Dashboard_Loginned = ({ refresh }) => {
         if (response.data.success) {
           // Refresh dashboard data to show updated collection assignments
           await fetchDashboardData(user._id);
-          console.log(`Added ${linkIds.length} links to collection`);
+          // console.log(`Added ${linkIds.length} links to collection`);
         }
       } catch (error) {
         console.error("Error adding links to collection:", error);
@@ -615,14 +618,14 @@ const Dashboard_Loginned = ({ refresh }) => {
   const filteredData = useMemo(() => {
     let filtered = links;
 
-    console.log("Filtering data:", {
-      selectedCollection,
-      totalLinks: links.length,
-      totalCollections: collections.length,
-      searchQuery,
-      sampleLink: links[0],
-      sampleCollection: collections[0],
-    });
+    // console.log("Filtering data:", {
+    //   selectedCollection,
+    //   totalLinks: links.length,
+    //   totalCollections: collections.length,
+    //   searchQuery,
+    //   sampleLink: links[0],
+    //   sampleCollection: collections[0],
+    // });
 
     if (selectedCollection === "uncategorized") {
       // Filter links that don't belong to any collection
@@ -637,22 +640,22 @@ const Dashboard_Loginned = ({ refresh }) => {
         );
         return validCollections.length === 0;
       });
-      console.log("Uncategorized links found:", filtered.length);
+      // console.log("Uncategorized links found:", filtered.length);
     } else if (selectedCollection !== "all") {
       const collection = collections.find((c) => c._id === selectedCollection);
       if (collection && collection.links) {
         const linkIdsInCollection = new Set(collection.links);
         filtered = links.filter((link) => linkIdsInCollection.has(link._id));
-        console.log(
-          `Collection "${collection.name}" links found:`,
-          filtered.length
-        );
+        // console.log(
+        //   `Collection "${collection.name}" links found:`,
+        //   filtered.length
+        // );
       } else {
         filtered = []; // No links in this collection
-        console.log("No collection found or collection has no links");
+        // console.log("No collection found or collection has no links");
       }
     } else {
-      console.log("Showing all links:", filtered.length);
+      // console.log("Showing all links:", filtered.length);
     }
 
     if (searchQuery) {
@@ -664,7 +667,7 @@ const Dashboard_Loginned = ({ refresh }) => {
             .toLowerCase()
             .includes(lowercasedQuery)
       );
-      console.log("After search filter:", filtered.length);
+      // console.log("After search filter:", filtered.length);
     }
 
     return filtered;
@@ -700,10 +703,10 @@ const Dashboard_Loginned = ({ refresh }) => {
         collections={collections}
         selectedCollection={selectedCollection}
         onCollectionSelect={(collectionId) => {
-          console.log("Collection selected:", collectionId);
-          console.log("Previous selection:", selectedCollection);
+          // console.log("Collection selected:", collectionId);
+          // console.log("Previous selection:", selectedCollection);
           setSelectedCollection(collectionId);
-          console.log("New selection set to:", collectionId);
+          // console.log("New selection set to:", collectionId);
         }}
         onCreateCollection={() => setIsCreateCollectionModalOpen(true)}
         onEditCollection={(collection) => {

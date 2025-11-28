@@ -29,7 +29,7 @@ const CollectionsSidebar = ({
   const filteredCollections = collections.filter((collection) =>
     collection.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  console.log("Filtered Collections:", filteredCollections);
+  // console.log("Filtered Collections:", filteredCollections);
   const systemCollections = filteredCollections.filter((c) => c.isSystem);
   const userCollections = filteredCollections.filter((c) => !c.isSystem);
 
